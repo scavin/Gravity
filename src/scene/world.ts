@@ -188,6 +188,8 @@ export class World {
   private orbitInitVel = new Vector3();
   private orbitSunPos = new Vector3();
   private orbitK = 784;
+  private orbitVBase = 7;  // circular speed at orbitR (scene units) — vector scaling reference
+  private orbitR = 16;     // reference Sun↔Earth distance (scene units)
   private orbitGrav = 0;   // gravity ramp 0..1
   private vecFade = 0;     // teaching-vector opacity 0..1
 
@@ -420,6 +422,10 @@ export class World {
       if (isStar) this.animateSunSurface(mat as MeshBasicMaterial);
       const mesh = new Mesh(geo, mat);
       mesh.scale.setScalar(r);
+      // Apply the axial tilt *outside* the daily spin (rotation.y) so the pole
+      // stays fixed in space — spinning rotates the surface around a stationary
+      // tilted axis, not precessing it (which only happens over ~26,000 yr).
+      mesh.rotation.order = 'ZYX';
       mesh.rotation.z = MathUtils.degToRad(body.axialTilt);
       mesh.userData.id = body.id; // for hover raycasting
       this.scene.add(mesh);
@@ -923,6 +929,7 @@ export class World {
     if (this.dust) this.dust.visible = false;
     if (this.parallax) this.parallax.visible = false;
     const vBase = 7, R = 16;
+    this.orbitVBase = vBase; this.orbitR = R;
     // Continue from the Earth's current position, moving +X.
     this.orbitPos.set(earth ? earth.curScene.x : 0, 0, earth ? earth.curScene.z : 0);
     this.orbitVel.set(vBase * speedFactor, 0, 0);
@@ -1533,13 +1540,21 @@ export class World {
    * Earth–Moon slides, where Earth orbits the Sun so a fixed camera would lose
    * it. The view eases toward the moving target each frame.
    */
-  followBody(id: string, distanceMul = 10, raiseFactor = 0.34): void {
+  followBody(id: string, distanceMul = 10, raiseFactor = 0.34, sideView = false): void {
     const v = this.views.find((x) => x.body.id === id);
     const radius = v ? v.mesh.scale.x : 1;
     const dist = Math.max(radius * distanceMul, 8);
-    const raise = dist * raiseFactor; // 0 = body dead-center on screen
-    this.followCamOffset.set(0, dist, raise + 0.001); // tiny z avoids gimbal at raise=0
-    this.followTgtOffset.set(0, 0, raise);
+    if (sideView) {
+      // 3/4 view from in front (+Z) and slightly above, so an axial tilt reads
+      // as a lean — used for the self-rotation slide (which would otherwise show
+      // the tilt foreshortened from straight overhead).
+      this.followCamOffset.set(0, dist * 0.42, dist * 0.92);
+      this.followTgtOffset.set(0, 0, 0);
+    } else {
+      const raise = dist * raiseFactor; // 0 = body dead-center on screen
+      this.followCamOffset.set(0, dist, raise + 0.001); // tiny z avoids gimbal at raise=0
+      this.followTgtOffset.set(0, 0, raise);
+    }
     this.followId = id;
     this.followHasLast = false;
     this.homeCamPos = null; // home is the (dynamic) follow pose
@@ -2104,27 +2119,40 @@ export class World {
     }
     velDir.normalize();
 
-    const speedKmS = (velEcl.length() * AU_KM) / DAY;
-    const force = (G * m1 * m2) / (rMeters * rMeters); // Newtons
-
-    // Arrow length adapts to the orbit's on-screen size (Sun↔Earth is large;
-    // Earth↔Moon is small) — but in the inertia demo there's no attractor, so
-    // it's a FIXED length (the constant velocity shouldn't make it grow).
     const inertia = s.demoMode === 'inertia';
     const sep = subjScene.distanceTo(attrScene);
-    const ARROW = inertia ? 6 : Math.max(sep * 0.5, 0.6);
-    const HEAD = ARROW * 0.4, HEADW = ARROW * 0.22;
-    const labelGap = ARROW + (inertia ? 1.5 : sep * 0.12 + 0.5);
+
+    // Magnitudes + arrow lengths. Orbit-intro reflects the LIVE 2-body state, so
+    // the numbers and arrow lengths change as the planet speeds up, slows, or
+    // the pull weakens (plunge vs escape) — rather than reading constant.
+    let speedKmS: number, force: number, velLen: number, gravLen: number;
+    if (orbitIntro) {
+      const sepR = Math.max(sep, 0.5);
+      const speedScene = Math.hypot(this.orbitVel.x, this.orbitVel.z);
+      const speedRatio = speedScene / this.orbitVBase;   // 1 == the circular case
+      const forceRatio = (this.orbitR / sepR) ** 2;       // 1/r², 1 == reference distance
+      speedKmS = speedRatio * 29.8;                       // anchored to Earth's real ~29.8 km/s
+      force = forceRatio * 3.5e22;                        // anchored to the real ~3.5e22 N
+      const L0 = this.orbitR * 0.45;
+      velLen = L0 * Math.max(0.3, Math.min(1.7, speedRatio));
+      gravLen = L0 * Math.max(0.25, Math.min(1.8, forceRatio));
+    } else {
+      speedKmS = (velEcl.length() * AU_KM) / DAY;
+      force = (G * m1 * m2) / (rMeters * rMeters); // Newtons
+      // Fixed length in the inertia demo (no attractor); else scaled to the orbit.
+      velLen = gravLen = inertia ? 6 : Math.max(sep * 0.5, 0.6);
+    }
+    const labelGap = (len: number) => len + (inertia ? 1.5 : sep * 0.12 + 0.5);
     const vf = orbitIntro ? this.vecFade : 1; // arrows fade in during the orbit-intro
 
     if (s.vecVelocity) {
       this.velArrow.visible = true;
       this.velArrow.position.copy(subjScene);
       this.velArrow.setDirection(velDir);
-      this.velArrow.setLength(ARROW, HEAD, HEADW);
+      this.velArrow.setLength(velLen, velLen * 0.4, velLen * 0.22);
       this.setArrowOpacity(this.velArrow, vf);
       this.velLabel.visible = s.showLabels;
-      this.velLabel.position.copy(subjScene).addScaledVector(velDir, labelGap);
+      this.velLabel.position.copy(subjScene).addScaledVector(velDir, labelGap(velLen));
       (this.velLabel.element as HTMLElement).textContent = `v ≈ ${speedKmS.toFixed(speedKmS < 10 ? 2 : 1)} km/s`;
       (this.velLabel.element as HTMLElement).style.opacity = String(vf);
     }
@@ -2151,10 +2179,10 @@ export class World {
       this.gravArrow.visible = true;
       this.gravArrow.position.copy(subjScene);
       this.gravArrow.setDirection(gravDir);
-      this.gravArrow.setLength(ARROW, HEAD, HEADW);
+      this.gravArrow.setLength(gravLen, gravLen * 0.4, gravLen * 0.22);
       this.setArrowOpacity(this.gravArrow, vf);
       this.gravLabel.visible = s.showLabels;
-      this.gravLabel.position.copy(subjScene).addScaledVector(gravDir, labelGap);
+      this.gravLabel.position.copy(subjScene).addScaledVector(gravDir, labelGap(gravLen));
       (this.gravLabel.element as HTMLElement).textContent = `F ≈ ${force.toExponential(1)} N`;
       (this.gravLabel.element as HTMLElement).style.opacity = String(vf);
 
@@ -2162,7 +2190,7 @@ export class World {
         this.gravArrowSun.visible = true;
         this.gravArrowSun.position.copy(attrScene);
         this.gravArrowSun.setDirection(gravDir.clone().negate());
-        this.gravArrowSun.setLength(ARROW, HEAD, HEADW);
+        this.gravArrowSun.setLength(gravLen, gravLen * 0.4, gravLen * 0.22);
         this.setArrowOpacity(this.gravArrowSun, vf);
       }
     }

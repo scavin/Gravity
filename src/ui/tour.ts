@@ -53,6 +53,8 @@ export interface TourStep {
   rocket?: { attractor: string; R: number; vBase: number; speed: number; label: string; lob?: number; satellite?: boolean };
   /** Which Voyager mission a gravity-assist slide plays. */
   mission?: 'voyager-1' | 'voyager-2';
+  /** Follow with a 3/4 side view (so an axial tilt reads as a lean). */
+  sideFollow?: boolean;
 }
 
 function fmtSpeed(dps: number): string {
@@ -212,8 +214,8 @@ export const STEPS: TourStep[] = [
       'Earth turns once every 23 h 56 min (one sidereal day) about an axis tilted 23.4° (the blue line). That spin gives us day and night; the tilt gives us the seasons. ' +
       'Rates vary enormously: Jupiter spins in under 10 hours, while Venus takes 243 days — and turns backwards. Watch Earth rotate.',
     scale: 'visual', physics: 'kepler', twoD: false, demo: 'normal',
-    showMoons: false, showOrbits: false, showProjection: false, spin: true, axes: true, daysPerSecond: 0.5,
-    visible: ['sun', 'earth'], focus: 'earth', focusMul: 6,
+    showMoons: false, showOrbits: false, showProjection: false, spin: true, axes: true, daysPerSecond: 0.14,
+    visible: ['sun', 'earth'], focus: 'earth', focusMul: 7, follow: true, sideFollow: true,
   },
   {
     id: 'sun-moving',
@@ -297,7 +299,7 @@ export const STEPS: TourStep[] = [
     id: 'spacetime',
     title: 'Einstein: gravity is curved spacetime',
     body:
-      'Everything so far is Newton’s picture — masses reaching across space to pull on one another. It predicts orbits beautifully, but Einstein’s general relativity (1915) goes deeper. Mass and energy curve the very fabric of space and time around them, the way a heavy ball dents a stretched sheet. A nearby object isn’t “pulled” by a force — it simply follows the straightest path it can through that curved space, rolling into the well. Same falling orbits you’ve watched all along — a profoundly different reason why.',
+      'Everything so far is Newton’s picture — masses reaching across space to pull on one another. It predicts orbits beautifully, but Einstein’s general relativity (1915) goes deeper. Mass and energy curve the very fabric of space and time around them, the way a heavy ball dents a stretched sheet. A nearby object isn’t “pulled” by a force — it simply follows the straightest path it can through that curved space, rolling into the well. Newton isn’t wrong, though: his law is exactly what Einstein’s becomes when gravity is weak and speeds are far below light — the same falling orbits you’ve watched all along, with a deeper reason why.',
     scale: 'visual', physics: 'kepler', twoD: false, demo: 'spacetime',
     showMoons: false, showOrbits: false, showProjection: false, spin: false, daysPerSecond: 0,
     visible: [],
@@ -407,7 +409,7 @@ const PL: Record<string, { title: string; body: string }> = {
   },
   'spacetime': {
     title: 'Einstein: grawitacja to zakrzywiona czasoprzestrzeń',
-    body: 'Wszystko dotąd to obraz Newtona — masy przyciągające się nawzajem przez przestrzeń. Pięknie przewiduje orbity, ale ogólna teoria względności Einsteina (1915) sięga głębiej. Masa i energia zakrzywiają samą tkankę przestrzeni i czasu wokół siebie, tak jak ciężka kula wgniata napiętą tkaninę. Pobliski obiekt nie jest „przyciągany” siłą — po prostu podąża najprostszą możliwą drogą w tej zakrzywionej przestrzeni, wtaczając się w studnię. Te same spadające orbity, które widziałeś — lecz z całkiem innego powodu.',
+    body: 'Wszystko dotąd to obraz Newtona — masy przyciągające się nawzajem przez przestrzeń. Pięknie przewiduje orbity, ale ogólna teoria względności Einsteina (1915) sięga głębiej. Masa i energia zakrzywiają samą tkankę przestrzeni i czasu wokół siebie, tak jak ciężka kula wgniata napiętą tkaninę. Pobliski obiekt nie jest „przyciągany” siłą — po prostu podąża najprostszą możliwą drogą w tej zakrzywionej przestrzeni, wtaczając się w studnię. Newton nie jest jednak w błędzie: jego prawo to dokładnie to, czym staje się teoria Einsteina, gdy grawitacja jest słaba, a prędkości dużo mniejsze od prędkości światła — te same spadające orbity, które widziałeś, lecz z głębszym wyjaśnieniem.',
   },
   'mercury-precession': {
     title: 'Dowód: orbita Merkurego się obraca',
@@ -676,7 +678,7 @@ export class Tour {
     } else {
       w.setDemo(step.demo);
       if (step.frameAU != null) w.frameRadius(step.frameAU);
-      else if (step.focus && step.follow) w.followBody(step.focus, step.focusMul ?? 10, step.followRaise);
+      else if (step.focus && step.follow) w.followBody(step.focus, step.focusMul ?? 10, step.followRaise, step.sideFollow);
       else if (step.focus) w.focusOn(step.focus, step.focusMul ?? 8);
     }
   }
