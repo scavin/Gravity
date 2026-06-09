@@ -234,6 +234,7 @@ export class World {
   private spacetimeStar!: Mesh;
   private spacetimeOrbiter!: Mesh;
   private spacetimeAngle = 0;
+  private sunTime = { value: 0 }; // drives the animated churn on the Sun's surface
 
   // Explosion burst when a rocket crashes into the planet.
   private boom!: Points;
@@ -344,6 +345,27 @@ export class World {
     this.scene.add(new AmbientLight(0x222a3a, 1.1));
   }
 
+  /** Make the Sun's surface churn: warp the texture lookup with a time-varying
+   *  ripple, and pulse the brightness a touch — so it boils rather than sits flat. */
+  private animateSunSurface(mat: MeshBasicMaterial): void {
+    mat.onBeforeCompile = (shader) => {
+      shader.uniforms.uTime = this.sunTime;
+      shader.fragmentShader = 'uniform float uTime;\n' + shader.fragmentShader.replace(
+        '#include <map_fragment>',
+        `#ifdef USE_MAP
+          vec2 warpUv = vMapUv + 0.010 * vec2(
+            sin(vMapUv.y * 26.0 + uTime * 1.2) + sin(vMapUv.x * 17.0 - uTime * 0.7),
+            cos(vMapUv.x * 22.0 - uTime * 1.0) + sin(vMapUv.y * 13.0 + uTime * 0.5)
+          );
+          vec4 sampledDiffuseColor = texture2D( map, warpUv );
+          float flicker = 1.0 + 0.06 * sin(uTime * 2.3 + vMapUv.x * 40.0);
+          diffuseColor *= sampledDiffuseColor * flicker;
+        #endif`,
+      );
+    };
+    mat.needsUpdate = true;
+  }
+
   private buildStarfield(): void {
     const N = 4000;
     const pos = new Float32Array(N * 3);
@@ -382,6 +404,7 @@ export class World {
       const mat = isStar
         ? new MeshBasicMaterial({ map: tex })
         : new MeshStandardMaterial({ map: tex, bumpMap: tex, bumpScale: 0.015, roughness: 0.92, metalness: 0.0 });
+      if (isStar) this.animateSunSurface(mat as MeshBasicMaterial);
       const mesh = new Mesh(geo, mat);
       mesh.scale.setScalar(r);
       mesh.rotation.z = MathUtils.degToRad(body.axialTilt);
@@ -1271,10 +1294,17 @@ export class World {
     this.orbitInitPos.copy(this.orbitPos);
     this.orbitInitVel.copy(this.orbitVel);
     this.seedRocketTrail();
-    // Zoom in close for the Earth launches (so the planet fills the view); the
-    // Sun-escape step stays pulled back to keep the whole orbit in frame.
-    const dist = this.rocketAttractorR > 0 ? this.rocketAttractorR * 2.9 + 2.8 : R * 3.6 + 8;
-    this.flyTo(new Vector3(0, dist, 0.001), new Vector3(0, 0, 0));
+    if (this.rocketAttractorR > 0) {
+      // Earth launches: zoom in close, top-down, so the planet fills the view.
+      const dist = this.rocketAttractorR * 2.9 + 2.8;
+      this.flyTo(new Vector3(0, dist, 0.001), new Vector3(0, 0, 0));
+    } else {
+      // Sun escape (third cosmic): a pulled-back 3/4 view matching the
+      // solar-system slide, so arriving from it is a gentle move rather than a
+      // hard tilt-and-zoom through the Sun.
+      const dist = R * 3.6 + 8;
+      this.flyTo(new Vector3(0.45, 0.5, 1).normalize().multiplyScalar(dist), new Vector3(0, 0, 0));
+    }
   }
 
   /** Sphere-of-influence slide: nested Sun ⊃ Earth ⊃ Moon spheres. */
@@ -1520,6 +1550,7 @@ export class World {
 
   update(dtReal: number): void {
     const s = this.state;
+    this.sunTime.value += dtReal; // animate the Sun's surface
 
     if (s.demoMode === 'flyby') {
       // Voyager slides drive the clock along the mission timeline (real dates),

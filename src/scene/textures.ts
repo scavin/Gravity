@@ -4,7 +4,9 @@ import { CanvasTexture, RepeatWrapping, ClampToEdgeWrapping, SRGBColorSpace, Tex
 let earthRealCache: Texture | null = null;
 function earthRealTexture(): Texture {
   if (earthRealCache) return earthRealCache;
-  const t = new TextureLoader().load('/earth_daymap.jpg');
+  // Respect Vite's base path (e.g. /Gravity/ on GitHub Pages) — a root-absolute
+  // '/earth_daymap.jpg' would 404 there and leave the Earth untextured/dark.
+  const t = new TextureLoader().load(`${import.meta.env.BASE_URL}earth_daymap.jpg`);
   t.colorSpace = SRGBColorSpace;
   t.wrapS = RepeatWrapping;
   earthRealCache = t;

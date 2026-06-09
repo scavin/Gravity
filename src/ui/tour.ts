@@ -261,7 +261,7 @@ export const STEPS: TourStep[] = [
     title: 'Third cosmic velocity — leaving the Solar System',
     body:
       'One last step out. Even after escaping Earth, a probe is still bound to the Sun. The third cosmic velocity, ≈ 16.7 km/s from Earth, is what it takes to escape the Sun’s gravity too and leave the Solar System for interstellar space — the path Voyager is on. Watch the probe spiral out past the planets and never return.',
-    scale: 'visual', physics: 'kepler', twoD: true, demo: 'rocket',
+    scale: 'visual', physics: 'kepler', twoD: false, demo: 'rocket',
     showMoons: false, showOrbits: true, showProjection: false, spin: false, daysPerSecond: 1,
     visible: null,
     rocket: { attractor: 'sun', R: 14, vBase: 3.0, speed: 1.45, label: 'v₃ ≈ 16.7 km/s' },
