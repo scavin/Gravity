@@ -302,6 +302,15 @@ export const STEPS: TourStep[] = [
     showMoons: false, showOrbits: false, showProjection: false, spin: false, daysPerSecond: 0,
     visible: [],
   },
+  {
+    id: 'mercury-precession',
+    title: 'The proof: Mercury’s orbit precesses',
+    body:
+      'Here’s where it stops being philosophy. Mercury’s elliptical orbit doesn’t close — its perihelion (closest point to the Sun) creeps around a little each lap. Newton, accounting for the tug of the other planets, predicts most of it but falls short by 43 arcseconds per century. That tiny gap went unexplained for decades — until general relativity predicted exactly 43″. The Sun’s curved spacetime makes the orbit rotate. Here it’s hugely exaggerated so you can watch the ellipse turn and trace a rosette; the blue line marks the precessing perihelion.',
+    scale: 'visual', physics: 'kepler', twoD: true, demo: 'precession',
+    showMoons: false, showOrbits: false, showProjection: false, spin: false, daysPerSecond: 0,
+    visible: ['sun'],
+  },
 ];
 
 export type Lang = 'en' | 'pl';
@@ -399,6 +408,10 @@ const PL: Record<string, { title: string; body: string }> = {
   'spacetime': {
     title: 'Einstein: grawitacja to zakrzywiona czasoprzestrzeń',
     body: 'Wszystko dotąd to obraz Newtona — masy przyciągające się nawzajem przez przestrzeń. Pięknie przewiduje orbity, ale ogólna teoria względności Einsteina (1915) sięga głębiej. Masa i energia zakrzywiają samą tkankę przestrzeni i czasu wokół siebie, tak jak ciężka kula wgniata napiętą tkaninę. Pobliski obiekt nie jest „przyciągany” siłą — po prostu podąża najprostszą możliwą drogą w tej zakrzywionej przestrzeni, wtaczając się w studnię. Te same spadające orbity, które widziałeś — lecz z całkiem innego powodu.',
+  },
+  'mercury-precession': {
+    title: 'Dowód: orbita Merkurego się obraca',
+    body: 'Tu kończy się filozofia. Eliptyczna orbita Merkurego się nie domyka — jej peryhelium (punkt najbliższy Słońcu) z każdym okrążeniem nieco się przesuwa. Newton, uwzględniając przyciąganie pozostałych planet, przewiduje większość tego ruchu, ale brakuje mu 43 sekund kątowych na stulecie. Ta drobna różnica przez dziesięciolecia pozostawała niewyjaśniona — aż ogólna teoria względności przewidziała dokładnie 43″. Zakrzywiona czasoprzestrzeń Słońca obraca orbitę. Tutaj efekt jest mocno wyolbrzymiony, byś mógł zobaczyć, jak elipsa się obraca i kreśli rozetę; niebieska linia wskazuje przesuwające się peryhelium.',
   },
 };
 
@@ -658,6 +671,8 @@ export class Tour {
       w.startFlyby(step.mission ?? 'voyager-2');
     } else if (step.demo === 'spacetime') {
       w.startSpacetime();
+    } else if (step.demo === 'precession') {
+      w.startPrecession();
     } else {
       w.setDemo(step.demo);
       if (step.frameAU != null) w.frameRadius(step.frameAU);

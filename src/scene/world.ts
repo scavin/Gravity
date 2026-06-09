@@ -32,7 +32,7 @@ function eclToScene(v: Vector3, out: Vector3): Vector3 {
 export type PhysicsMode = 'kepler' | 'nbody';
 export type DemoMode =
   | 'normal' | 'inertia' | 'accretion' | 'helix' | 'orbit-intro' | 'rocket'
-  | 'soi' | 'flyby' | 'spacetime';
+  | 'soi' | 'flyby' | 'spacetime' | 'precession';
 
 interface BodyView {
   body: Body;
@@ -235,6 +235,18 @@ export class World {
   private spacetimeOrbiter!: Mesh;
   private spacetimeAngle = 0;
   private sunTime = { value: 0 }; // drives the animated churn on the Sun's surface
+  // Mercury perihelion-precession slide: an eccentric orbit whose major axis
+  // slowly rotates, tracing a rosette (the GR "Newton can't, Einstein can").
+  private precessMercury!: Mesh;
+  private precessTrail!: Line;
+  private precessTrailPts: Vector3[] = [];
+  private precessApsis!: Line;
+  private precessPeri!: Mesh;
+  private precessLabel!: CSS2DObject;
+  private precessM = 0; // mean anomaly
+  private precessW = 0; // perihelion (apsidal) angle
+  private readonly precessA = 8.5;
+  private readonly precessE = 0.45;
 
   // Explosion burst when a rocket crashes into the planet.
   private boom!: Points;
@@ -331,6 +343,7 @@ export class World {
     this.buildRocket();
     this.buildAstro();
     this.buildSpacetime();
+    this.buildPrecession();
     this.buildNBody();
     this.resize();
     window.addEventListener('resize', () => this.resize());
@@ -1113,6 +1126,36 @@ export class World {
     this.spacetimeOrbiter.visible = false; this.scene.add(this.spacetimeOrbiter);
   }
 
+  /** Build the Mercury perihelion-precession overlay: a planet, its rosette
+   *  trail, and a rotating apsidal line marking the precessing perihelion. */
+  private buildPrecession(): void {
+    this.precessMercury = new Mesh(
+      new SphereGeometry(0.5, 24, 24),
+      new MeshStandardMaterial({ color: 0xc7b29a, emissive: 0x6b5a45, emissiveIntensity: 0.6, roughness: 1 }),
+    );
+    this.precessMercury.visible = false; this.precessMercury.frustumCulled = false;
+    this.scene.add(this.precessMercury);
+
+    const tg = new BufferGeometry();
+    tg.setAttribute('position', new Float32BufferAttribute(new Float32Array(this.maxTrail * 3), 3));
+    tg.setDrawRange(0, 0);
+    this.precessTrail = new Line(tg, new LineBasicMaterial({ color: 0xc79a5a, transparent: true, opacity: 0.7 }));
+    this.precessTrail.visible = false; this.precessTrail.frustumCulled = false;
+    this.scene.add(this.precessTrail);
+
+    const ag = new BufferGeometry().setFromPoints([new Vector3(), new Vector3()]);
+    this.precessApsis = new Line(ag, new LineBasicMaterial({ color: 0x9fb4ff, transparent: true, opacity: 0.7 }));
+    this.precessApsis.visible = false; this.precessApsis.frustumCulled = false;
+    this.scene.add(this.precessApsis);
+
+    this.precessPeri = new Mesh(new SphereGeometry(0.28, 16, 16), new MeshBasicMaterial({ color: 0x9fb4ff }));
+    this.precessPeri.visible = false; this.precessPeri.frustumCulled = false;
+    this.scene.add(this.precessPeri);
+
+    this.precessLabel = this.makeLabel('Mercury', 'vec-label');
+    this.precessLabel.visible = false; this.scene.add(this.precessLabel);
+  }
+
   /** Read a point along a built trajectory Line from its vertex buffer (t 0..1).
    *  Linearly interpolates between vertices so a marker moves smoothly each
    *  frame rather than snapping from one vertex to the next. */
@@ -1189,6 +1232,46 @@ export class World {
         this.spacetimeWell(r) + 0.6,
         Math.sin(this.spacetimeAngle) * r,
       );
+    }
+
+    // Mercury precession: an eccentric orbit (Kepler motion) whose apsidal line
+    // slowly rotates, so the planet traces a rosette — the GR perihelion shift,
+    // exaggerated to be visible.
+    const prOn = mode === 'precession';
+    this.precessMercury.visible = prOn;
+    this.precessTrail.visible = prOn;
+    this.precessApsis.visible = prOn;
+    this.precessPeri.visible = prOn;
+    this.precessLabel.visible = prOn && this.state.showLabels;
+    if (prOn) {
+      if (!this.state.paused) {
+        this.precessM += dtReal * 2.0;   // orbital motion (~3s/orbit)
+        this.precessW += dtReal * 0.22;  // exaggerated perihelion precession
+      }
+      const a = this.precessA, e = this.precessE, b = a * Math.sqrt(1 - e * e);
+      let E = this.precessM;
+      for (let i = 0; i < 5; i++) E -= (E - e * Math.sin(E) - this.precessM) / (1 - e * Math.cos(E));
+      const ox = a * (Math.cos(E) - e), oy = b * Math.sin(E);
+      const cw = Math.cos(this.precessW), sw = Math.sin(this.precessW);
+      this.precessMercury.position.set(ox * cw - oy * sw, 0, ox * sw + oy * cw);
+      this.precessLabel.position.copy(this.precessMercury.position);
+      // Trail rosette.
+      this.precessTrailPts.push(this.precessMercury.position.clone());
+      if (this.precessTrailPts.length > this.maxTrail) this.precessTrailPts.shift();
+      const tarr = (this.precessTrail.geometry.getAttribute('position') as Float32BufferAttribute).array as Float32Array;
+      for (let k = 0; k < this.precessTrailPts.length; k++) {
+        const p = this.precessTrailPts[k];
+        tarr[k * 3] = p.x; tarr[k * 3 + 1] = p.y; tarr[k * 3 + 2] = p.z;
+      }
+      this.precessTrail.geometry.setDrawRange(0, this.precessTrailPts.length);
+      (this.precessTrail.geometry.getAttribute('position') as Float32BufferAttribute).needsUpdate = true;
+      // Apsidal line (major axis) + perihelion marker, both rotated by W.
+      const peri = a * (1 - e), apo = -a * (1 + e);
+      const aarr = (this.precessApsis.geometry.getAttribute('position') as Float32BufferAttribute).array as Float32Array;
+      aarr[0] = peri * cw; aarr[1] = 0; aarr[2] = peri * sw;
+      aarr[3] = apo * cw; aarr[4] = 0; aarr[5] = apo * sw;
+      (this.precessApsis.geometry.getAttribute('position') as Float32BufferAttribute).needsUpdate = true;
+      this.precessPeri.position.set(peri * cw, 0, peri * sw);
     }
   }
 
@@ -1367,6 +1450,22 @@ export class World {
     this.spacetimeAngle = 0;
     // Look down at the sheet from a low 3/4 angle, like the embedding diagram.
     this.flyTo(new Vector3(0, 23, 37), new Vector3(0, -5, 0));
+  }
+
+  /** Mercury-precession slide: Sun centered, the eccentric orbit's perihelion
+   *  slowly rotating (exaggerated) so it traces a rosette. */
+  startPrecession(): void {
+    this.state.demoMode = 'precession';
+    if (this.dust) this.dust.visible = false;
+    if (this.parallax) this.parallax.visible = false;
+    for (const v of this.views) {
+      if (!this.isVisible(v.body.id)) { v.opacity = 0; v.mesh.visible = false; }
+    }
+    this.precessM = 0;
+    this.precessW = 0;
+    this.precessTrailPts.length = 0;
+    // Top-down on the Sun so the rosette reads face-on.
+    this.flyTo(new Vector3(0, 30, 0.001), new Vector3(0, 0, 0));
   }
 
   private setArrowOpacity(a: ArrowHelper, o: number): void {
