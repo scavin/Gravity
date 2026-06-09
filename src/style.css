@@ -202,16 +202,30 @@ body.tour-active #controls { display: none; }
 }
 body.tour-active .tour-panel { display: flex; }
 
-.tour-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex: none; }
+/* Auto-play progress line (time until the next slide) */
+.tour-progress { display: none; height: 2px; background: rgba(255, 255, 255, 0.12); margin-bottom: 12px; flex: none; overflow: hidden; }
+.tour-progress.on { display: block; }
+.tour-progress-fill { display: block; height: 100%; width: 0%; background: #fff; }
+
+.tour-head { display: flex; align-items: center; justify-content: space-between; gap: 7px; margin-bottom: 12px; flex: none; }
 .tour-eyebrow {
-  font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.22em;
-  text-transform: uppercase; color: var(--muted);
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.13em;
+  text-transform: uppercase; color: var(--muted); white-space: nowrap;
 }
+.tour-skip { white-space: nowrap; }
 .tour-skip {
   background: transparent; color: var(--muted); border: none; cursor: pointer;
   font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; padding: 4px;
 }
 .tour-skip:hover { color: var(--text); }
+/* Auto-play (narration) toggle */
+.tour-auto {
+  background: transparent; border: 1px solid var(--line); border-radius: 2px;
+  color: var(--muted); cursor: pointer; flex: none;
+  font-size: 11px; line-height: 1; padding: 5px 8px;
+}
+.tour-auto:hover { color: var(--text); border-color: var(--line-strong); }
+.tour-auto.on { background: var(--accent); border-color: var(--accent); color: #000; }
 /* Collapse toggle — mobile only (hidden on desktop). Styled as a clear,
    bordered button with a generous tap target so it's obviously tappable. */
 .tour-collapse {

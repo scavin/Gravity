@@ -1,4 +1,4 @@
-import { World } from '../scene/world';
+import type { World } from '../scene/world';
 import type { ScaleMode } from '../scene/scale';
 import type { PhysicsMode, DemoMode } from '../scene/world';
 
@@ -318,7 +318,7 @@ export const STEPS: TourStep[] = [
 export type Lang = 'en' | 'pl';
 
 // Polish translations, keyed by step id. UI chrome strings below.
-const PL: Record<string, { title: string; body: string }> = {
+export const PL: Record<string, { title: string; body: string }> = {
   'what-is-gravity': {
     title: 'Czym jest grawitacja?',
     body: 'Grawitacja to przyciąganie między dowolnymi dwiema masami: F = G · m₁·m₂ / r² — tym silniejsze, im większe masy, i słabnące z kwadratem odległości. Oto tylko dwa ciała. Strzałki pokazują siłę, jaką każde działa na drugie: dokładnie równą i przeciwnie skierowaną (III zasada Newtona), około 3,5 × 10²² niutonów. Słońce jest ~333 000× cięższe, więc ta sama siła ledwie nim porusza, lecz rozpędza Ziemię wokół niego. Ta jedna reguła to cała opowieść — zaraz zobaczymy, że to ona zbudowała nawet te ciała.',
@@ -442,18 +442,30 @@ export class Tour {
   private speedVal: HTMLElement;
   private active = false;
   private lang: Lang = (localStorage.getItem('gravity-lang') as Lang) === 'pl' ? 'pl' : 'en';
+  // Narrated auto-play: plays each slide's audio, then waits 5s and advances.
+  private autoPlay = false;
+  private audio = new Audio();
+  private autoTimer: number | undefined;
+  private autoBtn!: HTMLButtonElement;
+  private progressTrack!: HTMLElement;
+  private progressFill!: HTMLElement;
+  private autoSlideStart = 0;       // when the current slide's narration began (ms)
+  private autoEnd = 0;              // estimated time it will advance (ms)
+  private autoRaf = 0;
 
   constructor(private world: World, private onExit: () => void) {
     // Single right-side tour panel: header, step dropdown, narration, speed, nav.
     this.root = document.createElement('div');
     this.root.className = 'panel tour-panel';
     this.root.innerHTML = `
+      <div class="tour-progress"><span class="tour-progress-fill"></span></div>
       <div class="tour-head">
         <span class="tour-eyebrow">${UI[this.lang].tour}</span>
         <div class="lang-switch">
           <button class="lang-btn" data-lang="en">EN</button>
           <button class="lang-btn" data-lang="pl">PL</button>
         </div>
+        <button class="tour-auto" title="Auto-play narration" aria-label="Auto-play narration">▶</button>
         <button class="tour-skip">${UI[this.lang].explore}</button>
         <button class="tour-collapse" aria-label="Hide description">▾</button>
       </div>
@@ -482,6 +494,8 @@ export class Tour {
     this.speedWrap = this.root.querySelector('.tour-speed')!;
     this.speedRange = this.root.querySelector('.speed-range')!;
     this.speedVal = this.root.querySelector('.speed-val')!;
+    this.progressTrack = this.root.querySelector('.tour-progress')!;
+    this.progressFill = this.root.querySelector('.tour-progress-fill')!;
 
     const list = this.root.querySelector('.steps-list')!;
     STEPS.forEach((step, i) => {
@@ -515,6 +529,26 @@ export class Tour {
       else this.go(this.index + 1);
     });
     this.root.querySelector('.tour-skip')!.addEventListener('click', () => this.exit());
+
+    // Auto-play: narrate each slide, then wait 5s and advance to the next.
+    this.autoBtn = this.root.querySelector('.tour-auto') as HTMLButtonElement;
+    this.autoBtn.addEventListener('click', () => this.setAutoPlay(!this.autoPlay));
+    // Once we know the clip length, set the expected advance time = clip + 5s
+    // (drives the progress line).
+    this.audio.addEventListener('loadedmetadata', () => {
+      if (this.autoPlay && isFinite(this.audio.duration)) {
+        this.autoEnd = performance.now() + (this.audio.duration + 5) * 1000;
+      }
+    });
+    // When the narration finishes, hold 5s then move on.
+    this.audio.addEventListener('ended', () => { this.autoEnd = performance.now() + 5000; this.scheduleAdvance(5000); });
+    // No audio file yet (or load failed) → fall back to an estimated read time.
+    this.audio.addEventListener('error', () => {
+      if (!this.autoPlay) return;
+      const ms = this.fallbackMs();
+      this.autoEnd = performance.now() + ms;
+      this.scheduleAdvance(ms);
+    });
 
     // Mobile: collapse the description to a slim nav-only bar (and back).
     const collapseBtn = this.root.querySelector('.tour-collapse') as HTMLButtonElement;
@@ -582,6 +616,7 @@ export class Tour {
 
   private exit(): void {
     this.active = false;
+    if (this.autoPlay) this.setAutoPlay(false);
     document.body.classList.remove('tour-active');
     this.world.setVisibleBodies(null);
     this.clearTeaching();
@@ -591,6 +626,7 @@ export class Tour {
 
   private showExplore(): void {
     this.active = false;
+    if (this.autoPlay) this.setAutoPlay(false);
     document.body.classList.remove('tour-active');
     this.world.setVisibleBodies(null);
     this.clearTeaching();
@@ -627,6 +663,65 @@ export class Tour {
       this.speedWrap.style.display = 'none';
     }
     if (updateHash) location.hash = step.id;
+    if (this.autoPlay) this.playCurrent(); // narrate this slide, then auto-advance
+  }
+
+  // ---- narrated auto-play -------------------------------------------------
+
+  private setAutoPlay(on: boolean): void {
+    this.autoPlay = on;
+    this.autoBtn.classList.toggle('on', on);
+    this.autoBtn.textContent = on ? '⏸' : '▶';
+    this.progressTrack.classList.toggle('on', on);
+    if (on) { this.playCurrent(); this.autoRaf = requestAnimationFrame(this.autoTick); }
+    else { this.stopAuto(); cancelAnimationFrame(this.autoRaf); this.progressFill.style.width = '0%'; }
+  }
+
+  private stopAuto(): void {
+    window.clearTimeout(this.autoTimer);
+    this.audio.pause();
+  }
+
+  /** Load + play the current slide's narration (id + language). */
+  private playCurrent(): void {
+    window.clearTimeout(this.autoTimer);
+    this.audio.pause();
+    this.autoSlideStart = performance.now();
+    this.autoEnd = this.autoSlideStart + this.fallbackMs(); // until audio metadata loads
+    this.progressFill.style.width = '0%';
+    this.audio.src = `${import.meta.env.BASE_URL}audio/${STEPS[this.index].id}.${this.lang}.mp3`;
+    // play() may reject if the file is missing/blocked — fall back to a timer.
+    this.audio.play().catch(() => {
+      const ms = this.fallbackMs();
+      this.autoEnd = performance.now() + ms;
+      this.scheduleAdvance(ms);
+    });
+  }
+
+  /** Animate the thin progress line toward the next slide's advance time. */
+  private autoTick = (): void => {
+    if (!this.autoPlay) return;
+    const span = Math.max(1, this.autoEnd - this.autoSlideStart);
+    const frac = Math.max(0, Math.min(1, (performance.now() - this.autoSlideStart) / span));
+    this.progressFill.style.width = (frac * 100).toFixed(2) + '%';
+    this.autoRaf = requestAnimationFrame(this.autoTick);
+  };
+
+  /** After narration (or the fallback wait), pause 5s then go to the next slide. */
+  private scheduleAdvance(afterMs: number): void {
+    if (!this.autoPlay) return;
+    window.clearTimeout(this.autoTimer);
+    this.autoTimer = window.setTimeout(() => {
+      if (!this.autoPlay) return;
+      if (this.index >= STEPS.length - 1) this.setAutoPlay(false); // stop at the end
+      else this.go(this.index + 1);
+    }, afterMs);
+  }
+
+  /** Estimated read time when there's no audio file (~160 wpm), min 9s. */
+  private fallbackMs(): number {
+    const words = this.localized(STEPS[this.index]).body.split(/\s+/).length;
+    return Math.min(32000, Math.max(9000, words * 380)) + 5000;
   }
 
   private apply(step: TourStep): void {
