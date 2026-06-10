@@ -1976,11 +1976,12 @@ export class World {
       mv.mesh.position.copy(parentView.curScene).add(this.tmp3);
       mv.orbitLine.position.copy(parentView.curScene);
 
-      if (!s.paused && s.showSpin && mv.moon.rotationPeriod) {
-        const rate = (2 * Math.PI) / Math.abs(mv.moon.rotationPeriod);
-        mv.spin += rate * dtReal * s.daysPerSecond * Math.sign(mv.moon.rotationPeriod);
-        mv.mesh.rotation.y = mv.spin;
-      }
+      // These moons are tidally locked: their rotation period equals their
+      // orbital period, so the same hemisphere always faces the planet. Rather
+      // than free-spin on an axis, orient a fixed meridian toward the parent —
+      // a geometric truth that holds even when paused. (this.tmp3 is the
+      // parent→moon offset, so the parent lies in the -tmp3 direction.)
+      mv.mesh.rotation.y = Math.atan2(-this.tmp3.x, -this.tmp3.z);
 
       // Moon real-space trail (helix slide): a coil around the planet's coil.
       if (s.demoMode === 'helix' && mvis) {

@@ -29,6 +29,33 @@ body { font-family: var(--sans); color: var(--text); font-weight: 400; -webkit-f
   color: rgba(255, 255, 255, 0.35); text-transform: uppercase;
 }
 .credit.credit-left { right: auto; left: 14px; }
+
+/* Background-music toggle — bottom-left, just above the "Made by" credit. */
+.music-toggle {
+  position: fixed; left: 14px; bottom: 30px; z-index: 6;
+  display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; padding: 0;
+  background: var(--panel); color: var(--muted);
+  border: 1px solid var(--line); border-radius: 50%;
+  cursor: pointer; backdrop-filter: blur(6px);
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+.music-toggle:hover { color: var(--text); border-color: var(--line-strong); }
+.music-toggle.on { color: #05070d; background: var(--accent); border-color: var(--accent); }
+
+/* First-slide call-to-action: one tap starts music + narrated auto-play.
+   Same visual language as the Back/Next buttons (uppercase, hairline, accent
+   fill), just standalone and a touch larger. */
+.tour-cta {
+  position: fixed; left: 50%; bottom: 13%; transform: translateX(-50%); z-index: 40;
+  align-items: center; gap: 9px; padding: 12px 22px; border-radius: 2px;
+  background: var(--accent); color: #000; border: 1px solid var(--accent);
+  font-family: var(--sans); text-transform: uppercase; letter-spacing: 0.12em;
+  font-size: 11px; font-weight: 600; cursor: pointer; opacity: 0.9;
+  transition: background 0.18s, border-color 0.18s, opacity 0.18s;
+}
+.tour-cta:hover { background: #d9e2ee; opacity: 1; }
+.tour-cta svg { display: block; margin-left: -2px; }
 .credit a { color: rgba(255, 255, 255, 0.55); text-decoration: none; }
 .credit a:hover { color: var(--text); }
 .label-layer { position: fixed; inset: 0; pointer-events: none; }
@@ -349,4 +376,10 @@ body.tour-active .tour-panel { display: flex; }
   /* Keep the credits clear of the bottom sheet. */
   .credit { bottom: auto; top: 8px; }
   .credit.credit-left { top: 8px; }
+
+  /* Move the music toggle up by the credits, clear of the bottom sheet. */
+  .music-toggle { bottom: auto; top: 4px; left: auto; right: 12px; }
+
+  /* Keep the CTA in the upper area, clear of the bottom-sheet panel. */
+  .tour-cta { bottom: auto; top: 34%; }
 }

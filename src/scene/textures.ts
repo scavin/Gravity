@@ -13,6 +13,17 @@ function earthRealTexture(): Texture {
   return t;
 }
 
+// Real lunar surface map (Moon-TomBrown.png, bundled in /public).
+let moonRealCache: Texture | null = null;
+function moonRealTexture(): Texture {
+  if (moonRealCache) return moonRealCache;
+  const t = new TextureLoader().load(`${import.meta.env.BASE_URL}Moon-TomBrown.webp`);
+  t.colorSpace = SRGBColorSpace;
+  t.wrapS = RepeatWrapping;
+  moonRealCache = t;
+  return t;
+}
+
 // Self-contained procedural surface textures. Everything is generated on an
 // offscreen canvas from 3D value-noise — no external image files, so the demo
 // works fully offline. Each body gets an equirectangular map (seamless in
@@ -215,7 +226,7 @@ export function surfaceTexture(id: string, colorHex: number): Texture {
     case 'neptune': tex = gasTex(seed, [[48, 86, 196], [60, 104, 214], [40, 74, 176], [70, 120, 224]], { contrast: 0.7, spot: [30, 50, 120], turb: 0.1 }); break;
     case 'pluto': tex = rockyTex(seed, [120, 104, 84], [206, 188, 160], { craters: 3 }); break;
     // moons
-    case 'moon': tex = rockyTex(seed, [78, 78, 82], [176, 176, 180], { craters: 6 }); break;
+    case 'moon': tex = moonRealTexture(); break;
     case 'io': tex = rockyTex(seed, [188, 170, 70], [236, 224, 150], { craters: 2 }); break;
     case 'europa': tex = rockyTex(seed, [180, 168, 150], [232, 224, 210], { craters: 1 }); break;
     case 'titan': tex = gasTex(seed, [[206, 150, 60], [224, 170, 80], [196, 138, 52]], { contrast: 0.3, turb: 0.1 }); break;

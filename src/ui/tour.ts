@@ -179,6 +179,7 @@ export const STEPS: TourStep[] = [
     title: 'The Earth and the Moon',
     body:
       'The same rule nests at every scale. The Moon (1.2% of Earth’s mass) is held by Earth’s gravity, orbiting every 27.3 days at 384 400 km — an orbit within an orbit. ' +
+      'It’s also tidally locked: it turns exactly once per orbit, so the same near side always faces Earth and we never see the far side from here — though that far side, despite the “dark side” nickname, is lit just as often. ' +
       'Switch Physics to “N-body” in the panel later to watch the Moon tug back and both bodies swing around their shared barycenter.',
     scale: 'visual', physics: 'kepler', twoD: true, demo: 'normal',
     showMoons: true, showOrbits: true, showProjection: false, spin: false, daysPerSecond: 4,
@@ -361,7 +362,7 @@ export const PL: Record<string, { title: string; body: string }> = {
   },
   'earth-moon': {
     title: 'Ziemia i Księżyc',
-    body: 'Ta sama reguła zagnieżdża się na każdej skali. Księżyc (1,2% masy Ziemi) jest utrzymywany grawitacją Ziemi, okrążając ją co 27,3 dnia w odległości 384 400 km — orbita wewnątrz orbity. Przełącz później fizykę na „N-body” w panelu, by zobaczyć, jak Księżyc odciąga Ziemię i oba ciała krążą wokół wspólnego środka masy.',
+    body: 'Ta sama reguła zagnieżdża się na każdej skali. Księżyc (1,2% masy Ziemi) jest utrzymywany grawitacją Ziemi, okrążając ją co 27,3 dnia w odległości 384 400 km — orbita wewnątrz orbity. Jest też zsynchronizowany pływowo: obraca się dokładnie raz na obieg, więc wciąż ta sama strona widoczna jest zwrócona ku Ziemi i nigdy nie widzimy stąd strony odwróconej — choć ta strona, mimo przezwiska „ciemna”, jest oświetlana równie często. Przełącz później fizykę na „N-body” w panelu, by zobaczyć, jak Księżyc odciąga Ziemię i oba ciała krążą wokół wspólnego środka masy.',
   },
   'moon-no-fall': {
     title: 'Dlaczego Księżyc nie spada na Ziemię',
@@ -418,8 +419,8 @@ export const PL: Record<string, { title: string; body: string }> = {
 };
 
 const UI = {
-  en: { tour: 'Guided Tour', explore: 'Explore ✕', back: '‹ Back', next: 'Next ›', finish: 'Finish ✓', speed: 'Time speed', step: 'Step' },
-  pl: { tour: 'Przewodnik', explore: 'Eksploruj ✕', back: '‹ Wstecz', next: 'Dalej ›', finish: 'Zakończ ✓', speed: 'Prędkość czasu', step: 'Krok' },
+  en: { tour: 'Guided Tour', explore: 'Explore ✕', back: '‹ Back', next: 'Next ›', finish: 'Finish ✓', speed: 'Time speed', step: 'Step', playCta: 'Play with narration & music' },
+  pl: { tour: 'Przewodnik', explore: 'Eksploruj ✕', back: '‹ Wstecz', next: 'Dalej ›', finish: 'Zakończ ✓', speed: 'Prędkość czasu', step: 'Krok', playCta: 'Odtwórz z narracją i muzyką' },
 };
 
 export function stepIndexFromHash(): number {
@@ -452,6 +453,7 @@ export class Tour {
   private autoSlideStart = 0;       // when the current slide's narration began (ms)
   private autoEnd = 0;              // estimated time it will advance (ms)
   private autoRaf = 0;
+  private cta!: HTMLButtonElement;  // first-slide "play everything" call-to-action
 
   constructor(private world: World, private onExit: () => void) {
     // Single right-side tour panel: header, step dropdown, narration, speed, nav.
@@ -484,6 +486,17 @@ export class Tour {
         <button class="tour-next">Next ›</button>
       </div>`;
     document.getElementById('app')!.appendChild(this.root);
+
+    // First-slide call-to-action: one tap starts the music + narrated auto-play.
+    this.cta = document.createElement('button');
+    this.cta.type = 'button';
+    this.cta.className = 'tour-cta';
+    this.cta.style.display = 'none';
+    this.cta.innerHTML = `
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+      <span class="tour-cta-label">${UI[this.lang].playCta}</span>`;
+    this.cta.addEventListener('click', () => this.startPlayback());
+    document.getElementById('app')!.appendChild(this.cta);
 
     this.titleEl = this.root.querySelector('.tour-title')!;
     this.bodyEl = this.root.querySelector('.tour-body')!;
@@ -540,10 +553,17 @@ export class Tour {
         this.autoEnd = performance.now() + (this.audio.duration + 5) * 1000;
       }
     });
-    // When the narration finishes, hold 5s then move on.
-    this.audio.addEventListener('ended', () => { this.autoEnd = performance.now() + 5000; this.scheduleAdvance(5000); });
+    // Tell the background music to duck while the narrator is actually speaking.
+    this.audio.addEventListener('playing', () => this.emitNarration(true));
+    // When the narration finishes, hold 5s then move on (music swells back up).
+    this.audio.addEventListener('ended', () => {
+      this.emitNarration(false);
+      this.autoEnd = performance.now() + 5000;
+      this.scheduleAdvance(5000);
+    });
     // No audio file yet (or load failed) → fall back to an estimated read time.
     this.audio.addEventListener('error', () => {
+      this.emitNarration(false);
       if (!this.autoPlay) return;
       const ms = this.fallbackMs();
       this.autoEnd = performance.now() + ms;
@@ -551,11 +571,8 @@ export class Tour {
     });
 
     // Mobile: collapse the description to a slim nav-only bar (and back).
-    const collapseBtn = this.root.querySelector('.tour-collapse') as HTMLButtonElement;
-    collapseBtn.addEventListener('click', () => {
-      const collapsed = this.root.classList.toggle('collapsed');
-      collapseBtn.textContent = collapsed ? '▴' : '▾';
-      collapseBtn.setAttribute('aria-label', collapsed ? 'Show description' : 'Hide description');
+    this.root.querySelector('.tour-collapse')!.addEventListener('click', () => {
+      this.setCollapsed(!this.root.classList.contains('collapsed'));
     });
 
     // Language switch (EN / PL), persisted to localStorage.
@@ -617,6 +634,7 @@ export class Tour {
   private exit(): void {
     this.active = false;
     if (this.autoPlay) this.setAutoPlay(false);
+    this.updateCta();
     document.body.classList.remove('tour-active');
     this.world.setVisibleBodies(null);
     this.clearTeaching();
@@ -627,6 +645,7 @@ export class Tour {
   private showExplore(): void {
     this.active = false;
     if (this.autoPlay) this.setAutoPlay(false);
+    this.updateCta();
     document.body.classList.remove('tour-active');
     this.world.setVisibleBodies(null);
     this.clearTeaching();
@@ -664,9 +683,39 @@ export class Tour {
     }
     if (updateHash) location.hash = step.id;
     if (this.autoPlay) this.playCurrent(); // narrate this slide, then auto-advance
+    this.updateCta();
   }
 
   // ---- narrated auto-play -------------------------------------------------
+
+  /** Tell the music controller whether the narrator is currently speaking. */
+  private emitNarration(speaking: boolean): void {
+    window.dispatchEvent(new CustomEvent('gravity-narration', { detail: { speaking } }));
+  }
+
+  /** Collapse/expand the description (mobile shows a slim nav-only bar). */
+  private setCollapsed(on: boolean): void {
+    this.root.classList.toggle('collapsed', on);
+    const btn = this.root.querySelector('.tour-collapse') as HTMLButtonElement;
+    btn.textContent = on ? '▴' : '▾';
+    btn.setAttribute('aria-label', on ? 'Show description' : 'Hide description');
+  }
+
+  /** First-slide CTA: turn the music on and start the narrated auto-play. */
+  private startPlayback(): void {
+    // Music lives in its own controller (music.ts) behind the corner toggle —
+    // flip it on by clicking that button, but only if it isn't already on.
+    const music = document.getElementById('music-toggle');
+    if (music && music.getAttribute('aria-pressed') !== 'true') music.click();
+    if (!this.autoPlay) this.setAutoPlay(true);
+    // On mobile, hide the description so the scene isn't covered while it plays.
+    if (window.matchMedia('(max-width: 760px)').matches) this.setCollapsed(true);
+  }
+
+  /** The CTA shows only on the first slide before auto-play has started. */
+  private updateCta(): void {
+    this.cta.style.display = this.active && this.index === 0 && !this.autoPlay ? 'inline-flex' : 'none';
+  }
 
   private setAutoPlay(on: boolean): void {
     this.autoPlay = on;
@@ -674,7 +723,8 @@ export class Tour {
     this.autoBtn.textContent = on ? '⏸' : '▶';
     this.progressTrack.classList.toggle('on', on);
     if (on) { this.playCurrent(); this.autoRaf = requestAnimationFrame(this.autoTick); }
-    else { this.stopAuto(); cancelAnimationFrame(this.autoRaf); this.progressFill.style.width = '0%'; }
+    else { this.stopAuto(); cancelAnimationFrame(this.autoRaf); this.progressFill.style.width = '0%'; this.emitNarration(false); }
+    this.updateCta();
   }
 
   private stopAuto(): void {
@@ -803,6 +853,8 @@ export class Tour {
     this.root.querySelectorAll('.step-item .step-title').forEach((el, k) => {
       el.textContent = this.localized(STEPS[k]).title;
     });
+    const ctaLabel = this.cta?.querySelector('.tour-cta-label');
+    if (ctaLabel) ctaLabel.textContent = ui.playCta;
   }
 
   get isActive(): boolean { return this.active; }
