@@ -316,7 +316,7 @@ export const STEPS: TourStep[] = [
   },
 ];
 
-export type Lang = 'en' | 'pl';
+export type Lang = 'en' | 'pl' | 'cn';
 
 // Polish translations, keyed by step id. UI chrome strings below.
 export const PL: Record<string, { title: string; body: string }> = {
@@ -418,9 +418,109 @@ export const PL: Record<string, { title: string; body: string }> = {
   },
 };
 
+export const CN: Record<string, { title: string; body: string }> = {
+  'what-is-gravity': {
+    title: '什么是引力？',
+    body: '引力是任何两个质量体之间的吸引力：F = G · m₁·m₂ / r² —— 质量越大引力越强，距离越远引力越弱（与距离的平方成反比）。这里有两个天体。箭头显示了它们彼此施加的拉力：大小相等、方向相反（牛顿第三定律），大约为 3.5 × 10²² 牛顿。太阳的重量约为地球的 33.3 万倍，因此同样的力几乎无法移动太阳，却能让地球绕其飞驰。这一条规则就是整个故事的核心 —— 接下来我们将看到它甚至构建了这些天体。',
+  },
+  'birth-of-sun': {
+    title: '引力构建太阳',
+    body: '大约 46 亿年前，没有行星 —— 只有一个巨大且寒冷的气体和尘埃云（太阳星云）。每一颗微粒都吸引着其他每一颗微粒。引力将星云向内拖拽，随着它的坍缩，它旋转成一个扁平的圆盘，核心部分不断生长且密度增大。当核心变得足够热、足够重，足以点燃核聚变时，太阳被点亮了。观察尘埃如何聚集在一起。',
+  },
+  'birth-of-earth': {
+    title: '引力构建地球',
+    body: '同样的事情在年轻太阳周围的微型环境中也在发生。在剩余的圆盘中，尘埃微粒粘在一起，它们不断增长的引力席席卷了更多物质 —— 这是一个被称为“吸积”的失控过程。卵石变成巨石，巨石变成星子，最终合并成行星。地球就是这样一个由吸积而成的岩石和金属球。点燃太阳的同一种力，也组建了你脚下的土地。',
+  },
+  'inertia': {
+    title: '运动的物体保持运动',
+    body: '现在完全移除太阳。在没有外力作用的情况下，地球遵循牛顿第一定律：它以 29.8 公里/秒的恒定速度，永远沿直线漂移（绿色箭头 = 它的速度）。这就是惯性。运动本身会产生直线 —— 永远不是曲线，永远不是圆。必须有某种东西使路径弯曲。记住这颗漂移的地球，我们进入下一步。',
+  },
+  'why-no-fall': {
+    title: '为什么地球不会掉进太阳',
+    body: '把它们放在一起。太阳的引力（红色箭头）始终将地球直接向其拉拽 —— 那么为什么没有发生碰撞呢？因为地球同时也以 29.8 公里/秒的速度侧向移动（绿色箭头）。每一刻它确实在向太阳坠落，但它的侧向速度使它掠过太阳 —— 它不断地“错过”。虚线显示了仅靠惯性它会飞向哪里；引力将那条直线路径弯曲成一个闭合环。轨道简单来说就是持续坠落，并始终错过。',
+  },
+  'too-slow': {
+    title: '太慢了 —— 它掉了进去',
+    body: '轨道是一种平衡，速度是维持天体的力量。如果给地球太小的侧向速度，引力就会获胜：路径弯曲得太厉害，因此它不再绕圈，而是向太阳俯冲。移动太慢的行星不会绕轨道运行 —— 而是坠落。',
+  },
+  'too-fast': {
+    title: '太快了 —— 它逃逸了',
+    body: '现在反过来。将地球推过“逃逸速度”，引力就再也无法束缚它：路径虽然仍在弯曲，但永远不会闭合。地球绕过太阳一次后便飞入太空，永不回头。在太慢和太快之间，存在着能产生稳定轨道的狭窄速度范围。',
+  },
+  'rocket-too-slow': {
+    title: '低于轨道速度 —— 它坠回地面',
+    body: '火箭要飞多快才能离开地球？如果发射速度太慢，它只会划出一道弧线坠回地面：在它完成一个回路之前，引力已将其拉回地面。无论方向如何，速度不足的结果总是相同的 —— 坠毁。',
+  },
+  'first-cosmic': {
+    title: '第一宇宙速度 —— 轨道',
+    body: '给予它足够的侧向速度 —— 第一宇宙速度，约 7.9 公里/秒 —— 它就会停止坠回。现在火箭围绕地球坠落，而不是坠入地球，进入一个圆形轨道。这是低轨道上每一颗卫星的速度。',
+  },
+  'second-cosmic': {
+    title: '第二宇宙速度 —— 逃逸',
+    body: '加速到第二宇宙速度，约 11.2 公里/秒（恰好是第一宇宙速度的 √2 倍），火箭就不再绕轨道运行 —— 它彻底摆脱了地球引力，扬长而去。这是到达月球或其他行星所需的逃逸速度。',
+  },
+  'earth-moon': {
+    title: '地球与月球',
+    body: '同样的规则在每个尺度上嵌套。月球（质量为地球的 1.2%）被地球引力束缚，每 27.3 天在 38.44 万公里的距离运行一圈 —— 这是轨道中的轨道。它也被潮汐锁定：公转一圈正好自转一圈，所以我们总是看到同一面，从未在地球上见过背面 —— 尽管背面虽然被称为“暗面”，但被照亮的频率是一样的。稍后在面板中将物理引擎切换为“多体模拟”，观察月球如何回拉地球，以及这两个天体如何围绕它们共同的质心旋转。',
+  },
+  'moon-no-fall': {
+    title: '为什么月球不会掉向地球',
+    body: '这与地球和太阳的平衡完全相同，只是低了一个级别。地球的引力（红色箭头）将月球直接拉向我们 —— 大约 2 × 10²⁰ 牛顿 —— 然而它从未坠落。月球也以 1.02 公里/秒的速度侧向移动（绿色箭头）：每一刻它都在向地球坠落，但它的速度使它掠过地球，因此它绕圈运行而不是降落。虚线显示了如果没有引力，它会沿直线飞向哪里。它已经围绕我们坠落了 45 亿年 —— 并且一直在错过。',
+  },
+  'into-3d': {
+    title: '进入第三维度',
+    body: '轨道并不是完全平面的。月球的路径与地球轨道倾斜 5.1°，每颗行星的轨道相对于黄道面都有倾角。旋转到 3D 视角查看这些倾斜 —— 拖拽以旋转相机。在面板中切换“投影”，将每个天体投射到平面的 2D 黄道面上，观察 3D 位置如何向下投影。',
+  },
+  'self-rotation': {
+    title: '绕轴自转',
+    body: '绕太阳运行只是运动的一半 —— 每个天体也绕自己的轴自转，独立于其轨道。地球绕着倾斜 23.4° 的轴（蓝色线）每 23 小时 56 分钟转动一圈（一个恒星日）。这种自转给我们带来了昼夜；倾斜给我们带来了季节。转速差异巨大：木星自转不到 10 小时，而金星需要 243 天 —— 且是逆向转动。观察地球自转。',
+  },
+  'sun-moving': {
+    title: '太阳也在运动 —— 轨道实际上是螺旋线',
+    body: '我们将每个轨道画成扁平的闭合环 —— 但那只是相对于太阳而言。太阳本身并不是静止的：它以大约 230 公里/秒的速度在星系中穿行，带着整个太阳系一起前进。因此，行星在空间中的真实路径永远不会闭合。它在被向前拖拽的同时不断绕着太阳转动，勾勒出一条长长的 3D 螺旋线。每条彩色的轨迹都是行星在空间中的真实路线；太阳的轨迹是它们都环绕着的直线。',
+  },
+  'sun-moving-vectors': {
+    title: '同样的力，仍在发挥作用',
+    body: '即使在这种完全 3D 的运动中，物理原理也没有任何改变。每颗行星仍然感受到引力（红色）将其直接拉向太阳，并且仍然带有速度（绿色）—— 但这个速度现在指向它的螺旋线方向，而不是围绕一个平面圆周。引力在每一瞬间都在弯曲路径；前向漂移将每个回路拉伸成一个线圈。同样的 F = G·m₁·m₂/r²，同样的坠落与错过 —— 只是在太阳的运动参考系中观察而已。',
+  },
+  'sun-moving-moons': {
+    title: '卫星也随之而行',
+    body: '这种嵌套一直延伸到最底层。当太阳拖着地球沿着螺旋线前进时，地球也拖着月球一起前进 —— 因此月球勾勒出一个绕着地球线圈转动的线圈，而地球线圈本身又绕着太阳的路径转动。每个天体都在同时公转、被携带并携带自己的卫星。空间中的真实运动是螺旋线中的螺旋线。',
+  },
+  'solar-system': {
+    title: '整个太阳系',
+    body: '现在看剩下的部分：八大行星（加上冥王星）及其主要卫星，全部处于真实的 J2000 轨道上，具有准确的大小和距离，且各自绕轴自转。使用面板在“视觉比例”和“真实比例”（此时行星变成了它们真实的微粒模样）之间切换，开启多体引力，改变速度，并聚焦任何天体。自由探索吧。',
+  },
+  'third-cosmic': {
+    title: '第三宇宙速度 —— 离开太阳系',
+    body: '最后一步向外走。即使在逃离地球之后，探测器仍然被太阳束缚。第三宇宙速度，从地球出发约为 16.7 公里/秒，是逃离太阳引力并离开太阳系进入星际空间所需的速度 —— 也就是旅行者号所在的路径。观察探测器螺旋式飞过行星，永不回头。',
+  },
+  'sphere-of-influence': {
+    title: '希尔球（影响范围）',
+    body: '谁的引力获胜？每个天体周围都有一个区域 —— 它的影响球 —— 在这个区域内它的拉力占主导地位。它们相互嵌套：巨大的太阳影响球笼罩着整个系统；在它内部，地球开辟了自己的领域（约 92.4 万公里）；而在那内部，月球（在 38.44 万公里处）又开辟了一个更小的领域。这种嵌套就是为什么月球绕地球运行而不是直接绕太阳运行的原因 —— 跨越边界，下一个天体就会接管。任务规划者利用这一点，将航天器从一个影响球传递到下一个，就像一系列简单的二体问题链。',
+  },
+  'gravity-assist-1': {
+    title: '重力助推 —— 旅行者 1 号',
+    body: '航天器可以窃取行星轨道运动的一小部分：紧贴行星后方掠过，行星的引力就会像弹弓一样将探测器甩向前方，速度更快且无需燃料 —— 这就是重力助推。旅行者 1 号于 1977 年 9 月发射，利用木星（1979 年）加速前往土星（1980 年），然后近距离掠过土卫六（泰坦），使其路径向上弯曲，飞出行星平面，向星际空间进发。时钟运行的是真实日期 —— 观察行星在探测器抵达时如何移动到预定位置。',
+  },
+  'gravity-assist-2': {
+    title: '重力助推 —— 旅行者 2 号（大满贯之旅）',
+    body: '旅行者 2 号（1977 年 8 月发射）赶上了一个大约每 175 年出现一次的罕见对齐：它串联了所有四颗巨行星 —— 木星（1979 年）、土星（1981 年）、天王星（1986 年）、海王星（1989 年）—— 每次飞掠都弯曲了它的路径并将其甩向更远的地方，这是一场仅靠火箭无法完成的旅行。日期同样是真实的：巨行星们排成大满贯队列，探测器依次与它们会合。',
+  },
+  'spacetime': {
+    title: '爱因斯坦：引力是弯曲的时空',
+    body: '到目前为止，一切都是牛顿的图景 —— 质量跨越空间相互拉拽。它完美地预测了轨道，但爱因斯坦的广义相对论（1915 年）走得更深。质量和能量会弯曲它们周围的时空结构，就像重球压在拉伸的床单上一样。附近的物体并不是被一种力“拉拽” —— 它只是在那个弯曲的空间中沿着它能走的最直路径前进，滚入深井。牛顿并没有错：当引力较弱且速度远低于光速时，他的定律正是爱因斯坦定律的表现形式 —— 也就是你一直看到的坠落轨道，只是有了更深层的解释。',
+  },
+  'mercury-precession': {
+    title: '证明：水星轨道进动',
+    body: '这里不再仅仅是哲学。水星的椭圆轨道并不闭合 —— 它的近日点（离太阳最近的点）每圈都会稍微移动一点。牛顿考虑到其他行星的拉力，预测了大部分移动，但仍有每世纪 43 角秒的差距。这个微小的缺口几十年都无法解释 —— 直到广义相对论精确预测了这 43 角秒。太阳弯曲的时空使轨道旋转。在这里它被极大地夸张了，所以你可以观察椭圆如何转动并勾勒出玫瑰花结形状；蓝色线标记了进动的近日点。',
+  },
+};
+
 const UI = {
   en: { tour: 'Guided Tour', explore: 'Explore ✕', back: '‹ Back', next: 'Next ›', finish: 'Finish ✓', speed: 'Time speed', step: 'Step', playCta: 'Play with narration & music' },
   pl: { tour: 'Przewodnik', explore: 'Eksploruj ✕', back: '‹ Wstecz', next: 'Dalej ›', finish: 'Zakończ ✓', speed: 'Prędkość czasu', step: 'Krok', playCta: 'Odtwórz z narracją i muzyką' },
+  cn: { tour: '引导式导览', explore: '自由探索 ✕', back: '‹ 返回', next: '下一步 ›', finish: '完成 ✓', speed: '时间速度', step: '步骤', playCta: '播放旁白与音乐' },
 };
 
 export function stepIndexFromHash(): number {
@@ -442,7 +542,7 @@ export class Tour {
   private speedRange: HTMLInputElement;
   private speedVal: HTMLElement;
   private active = false;
-  private lang: Lang = (localStorage.getItem('gravity-lang') as Lang) === 'pl' ? 'pl' : 'en';
+  private lang: Lang = (localStorage.getItem('gravity-lang') as Lang) || 'cn';
   // Narrated auto-play: plays each slide's audio, then waits 5s and advances.
   private autoPlay = false;
   private audio = new Audio();
@@ -464,6 +564,7 @@ export class Tour {
       <div class="tour-head">
         <span class="tour-eyebrow">${UI[this.lang].tour}</span>
         <div class="lang-switch">
+          <button class="lang-btn" data-lang="cn">CN</button>
           <button class="lang-btn" data-lang="en">EN</button>
           <button class="lang-btn" data-lang="pl">PL</button>
         </div>
@@ -770,7 +871,14 @@ export class Tour {
 
   /** Estimated read time when there's no audio file (~160 wpm), min 9s. */
   private fallbackMs(): number {
-    const words = this.localized(STEPS[this.index]).body.split(/\s+/).length;
+    const text = this.localized(STEPS[this.index]).body;
+    const isChinese = this.lang === 'cn' || /[\u4e00-\u9fa5]/.test(text);
+    if (isChinese) {
+      // Estimate for Chinese: ~200-240 characters per minute.
+      const chars = text.length;
+      return Math.min(45000, Math.max(9000, chars * 200)) + 5000;
+    }
+    const words = text.split(/\s+/).length;
     return Math.min(32000, Math.max(9000, words * 380)) + 5000;
   }
 
@@ -831,6 +939,7 @@ export class Tour {
   /** Title + body for a step in the current language (falls back to English). */
   private localized(step: TourStep): { title: string; body: string } {
     if (this.lang === 'pl' && PL[step.id]) return PL[step.id];
+    if (this.lang === 'cn' && CN[step.id]) return CN[step.id];
     return { title: step.title, body: step.body };
   }
 

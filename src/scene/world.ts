@@ -1074,9 +1074,9 @@ export class World {
     this.soiEarthSphere = this.buildSoiSphere(4.2, 0x4aa3ff);
     this.soiMoonSphere = this.buildSoiSphere(1.2, 0xbfeaff);
     this.soiMoon = this.smallMoon(0.32);
-    this.soiSunLabel = this.makeLabel('Sun’s sphere of influence', 'vec-label');
-    this.soiEarthLabel = this.makeLabel('Earth’s SOI', 'vec-label');
-    this.soiMoonLabel = this.makeLabel('Moon’s SOI', 'vec-label');
+    this.soiSunLabel = this.makeLabel('太阳引力范围', 'vec-label');
+    this.soiEarthLabel = this.makeLabel('地球引力范围', 'vec-label');
+    this.soiMoonLabel = this.makeLabel('月球引力范围', 'vec-label');
     for (const l of [this.soiSunLabel, this.soiEarthLabel, this.soiMoonLabel]) { l.visible = false; this.scene.add(l); }
 
     // Gravity-assist: Voyager 1 & 2. The path lines are rebuilt in scene units at
@@ -1159,7 +1159,7 @@ export class World {
     this.precessPeri.visible = false; this.precessPeri.frustumCulled = false;
     this.scene.add(this.precessPeri);
 
-    this.precessLabel = this.makeLabel('Mercury', 'vec-label');
+    this.precessLabel = this.makeLabel('水星', 'vec-label');
     this.precessLabel.visible = false; this.scene.add(this.precessLabel);
   }
 
