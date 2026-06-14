@@ -8,58 +8,58 @@ export function buildUI(world: World, onStartTour: () => void): () => void {
   const app = document.getElementById('app')!;
   app.innerHTML = `
     <div class="panel" id="controls">
-      <h1>Gravity</h1>
-      <p class="sub">Solar System · Newtonian Model</p>
+      <h1>引力</h1>
+      <p class="sub">太阳系 · 牛顿模型</p>
 
       <div class="group">
-        <div class="glabel">Scale model</div>
+        <div class="glabel">比例模型</div>
         <div class="seg" id="scaleSeg">
-          <button data-v="visual" class="on">Visual</button>
-          <button data-v="real">True scale</button>
+          <button data-v="visual" class="on">视觉比例</button>
+          <button data-v="real">真实比例</button>
         </div>
         <div class="hint" id="scaleHint"></div>
       </div>
 
       <div class="group">
-        <div class="glabel">Physics</div>
+        <div class="glabel">物理引擎</div>
         <div class="seg" id="physSeg">
-          <button data-v="kepler" class="on">Keplerian</button>
-          <button data-v="nbody">N-body</button>
+          <button data-v="kepler" class="on">开普勒</button>
+          <button data-v="nbody">多体模拟</button>
         </div>
         <div class="hint" id="physHint"></div>
       </div>
 
       <div class="group">
-        <div class="glabel">Dimension</div>
+        <div class="glabel">维度</div>
         <div class="seg" id="dimSeg">
           <button data-v="3d" class="on">3D</button>
-          <button data-v="2d">2D ecliptic</button>
+          <button data-v="2d">2D 黄道</button>
         </div>
-        <div class="hint">3D shows real orbital inclinations; 2D flattens onto the ecliptic plane.</div>
+        <div class="hint">3D 显示真实的轨道倾角；2D 将轨道平铺在黄道面上。</div>
       </div>
 
       <div class="group">
-        <label class="chk"><input type="checkbox" id="cOrbits" checked> Orbit paths</label>
-        <label class="chk"><input type="checkbox" id="cMoons"> Moons <span class="tag">heavier</span></label>
-        <label class="chk"><input type="checkbox" id="cProj"> Projection lines onto ecliptic</label>
-        <label class="chk"><input type="checkbox" id="cLabels" checked> Labels</label>
+        <label class="chk"><input type="checkbox" id="cOrbits" checked> 轨道路径</label>
+        <label class="chk"><input type="checkbox" id="cMoons"> 卫星 <span class="tag">计算量大</span></label>
+        <label class="chk"><input type="checkbox" id="cProj"> 黄道投影线</label>
+        <label class="chk"><input type="checkbox" id="cLabels" checked> 标签</label>
       </div>
 
       <div class="group">
-        <div class="glabel">Time · <span id="speedVal"></span></div>
+        <div class="glabel">时间 · <span id="speedVal"></span></div>
         <input type="range" id="speed" min="0" max="100" value="42">
         <div class="row">
-          <button id="pause">⏸ Pause</button>
+          <button id="pause">⏸ 暂停</button>
           <button id="reset">⟲ J2000</button>
         </div>
       </div>
 
       <div class="group">
-        <div class="glabel">Focus camera</div>
+        <div class="glabel">相机聚焦</div>
         <select id="focus"></select>
       </div>
 
-      <button id="tourBtn" class="tour-restart">▶ Replay guided tour</button>
+      <button id="tourBtn" class="tour-restart">▶ 重播引导式导览</button>
     </div>
   `;
 
@@ -74,18 +74,18 @@ export function buildUI(world: World, onStartTour: () => void): () => void {
     const v = b.dataset.v as 'visual' | 'real';
     world.setScaleMode(v);
     scaleHint.textContent = v === 'real'
-      ? 'True scale — accurate sizes & distances. Planets are specks; zoom in.'
-      : 'Visual scale — sizes & distances compressed so everything is visible.';
+      ? '真实比例 —— 准确的大小和距离。行星非常微小；请放大查看。'
+      : '视觉比例 —— 压缩大小和距离，使所有天体清晰可见。';
   });
-  scaleHint.textContent = 'Visual scale — sizes & distances compressed so everything is visible.';
+  scaleHint.textContent = '视觉比例 —— 压缩大小和距离，使所有天体清晰可见。';
 
   // ---- physics segment ----
   const physSeg = app.querySelector('#physSeg')!;
   const physHint = app.querySelector('#physHint') as HTMLElement;
   const setPhysHint = (v: string) => {
     physHint.textContent = v === 'kepler'
-      ? 'Analytic two-body orbits from J2000 elements — exact, stable positions.'
-      : 'Direct F = G·m₁·m₂/r² integration of every pair — gravity, simulated.';
+      ? '来自 J2000 轨道根数的解析二体轨道 —— 位置精确且稳定。'
+      : '对每一对天体直接进行 F = G·m₁·m₂/r² 积分 —— 引力模拟。';
   };
   setPhysHint('kepler');
   physSeg.addEventListener('click', (e) => {
@@ -138,7 +138,7 @@ export function buildUI(world: World, onStartTour: () => void): () => void {
   const pauseBtn = app.querySelector('#pause') as HTMLButtonElement;
   pauseBtn.addEventListener('click', () => {
     world.state.paused = !world.state.paused;
-    pauseBtn.textContent = world.state.paused ? '▶ Play' : '⏸ Pause';
+    pauseBtn.textContent = world.state.paused ? '▶ 播放' : '⏸ 暂停';
   });
   (app.querySelector('#reset') as HTMLButtonElement).addEventListener('click', () => {
     world.simDays = 0;
@@ -172,8 +172,8 @@ export function buildUI(world: World, onStartTour: () => void): () => void {
     setSeg(dimSeg, st.twoD ? '2d' : '3d');
     setPhysHint(st.physics);
     scaleHint.textContent = st.scaleMode === 'real'
-      ? 'True scale — accurate sizes & distances. Planets are specks; zoom in.'
-      : 'Visual scale — sizes & distances compressed so everything is visible.';
+      ? '真实比例 —— 准确的大小和距离。行星非常微小；请放大查看。'
+      : '视觉比例 —— 压缩大小和距离，使所有天体清晰可见。';
     (app.querySelector('#cOrbits') as HTMLInputElement).checked = st.showOrbits;
     (app.querySelector('#cProj') as HTMLInputElement).checked = st.showProjection;
     (app.querySelector('#cLabels') as HTMLInputElement).checked = st.showLabels;
@@ -182,7 +182,7 @@ export function buildUI(world: World, onStartTour: () => void): () => void {
     const t = Math.log(st.daysPerSecond / 0.2) / Math.log(20000);
     speed.value = String(Math.round(Math.max(0, Math.min(1, t)) * 100));
     speedVal.textContent = fmtSpeed(st.daysPerSecond);
-    pauseBtn.textContent = st.paused ? '▶ Play' : '⏸ Pause';
+    pauseBtn.textContent = st.paused ? '▶ 播放' : '⏸ 暂停';
   };
 }
 
@@ -192,7 +192,7 @@ function seg(container: Element, active: Element): void {
   active.classList.add('on');
 }
 function fmtSpeed(dps: number): string {
-  if (dps < 1) return `${(dps * 24).toFixed(1)} h/s`;
-  if (dps < 400) return `${dps.toFixed(1)} days/s`;
-  return `${(dps / 365.25).toFixed(2)} yr/s`;
+  if (dps < 1) return `${(dps * 24).toFixed(1)} 小时/秒`;
+  if (dps < 400) return `${dps.toFixed(1)} 天/秒`;
+  return `${(dps / 365.25).toFixed(2)} 年/秒`;
 }
