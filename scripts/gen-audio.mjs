@@ -21,7 +21,7 @@ const out = ts.transpileModule(readFileSync(resolve(root, 'src/ui/tour.ts'), 'ut
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
 }).outputText;
 writeFileSync(tmp, out);
-const { STEPS, PL } = await import(pathToFileURL(tmp).href);
+const { STEPS, PL, CN } = await import(pathToFileURL(tmp).href);
 
 const outDir = resolve(root, 'public/audio');
 mkdirSync(outDir, { recursive: true });
@@ -44,7 +44,9 @@ async function tts(text, file) {
 for (const step of STEPS) {
   const en = `${step.title}. ${step.body}`;
   const pl = PL[step.id] ? `${PL[step.id].title}. ${PL[step.id].body}` : en;
+  const cn = CN[step.id] ? `${CN[step.id].title}。${CN[step.id].body}` : en;
   await tts(clean(en), resolve(outDir, `${step.id}.en.mp3`));
   await tts(clean(pl), resolve(outDir, `${step.id}.pl.mp3`));
+  await tts(clean(cn), resolve(outDir, `${step.id}.cn.mp3`));
 }
-console.log('\nDone:', STEPS.length, 'slides ×2 languages.');
+console.log('\nDone:', STEPS.length, 'slides ×3 languages.');

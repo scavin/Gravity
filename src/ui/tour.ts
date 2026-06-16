@@ -831,21 +831,42 @@ export class Tour {
   private stopAuto(): void {
     window.clearTimeout(this.autoTimer);
     this.audio.pause();
+    window.speechSynthesis.cancel();
   }
 
   /** Load + play the current slide's narration (id + language). */
   private playCurrent(): void {
     window.clearTimeout(this.autoTimer);
     this.audio.pause();
+    window.speechSynthesis.cancel();
     this.autoSlideStart = performance.now();
     this.autoEnd = this.autoSlideStart + this.fallbackMs(); // until audio metadata loads
     this.progressFill.style.width = '0%';
     this.audio.src = `${import.meta.env.BASE_URL}audio/${STEPS[this.index].id}.${this.lang}.mp3`;
-    // play() may reject if the file is missing/blocked — fall back to a timer.
+    // play() may reject if the file is missing/blocked — fall back to browser TTS.
     this.audio.play().catch(() => {
-      const ms = this.fallbackMs();
-      this.autoEnd = performance.now() + ms;
-      this.scheduleAdvance(ms);
+      if (this.autoPlay) {
+        const text = this.localized(STEPS[this.index]).body;
+        const ut = new SpeechSynthesisUtterance(text);
+        ut.lang = this.lang === 'pl' ? 'pl-PL' : (this.lang === 'cn' ? 'zh-CN' : 'en-US');
+        ut.onstart = () => this.emitNarration(true);
+        ut.onend = () => {
+          this.emitNarration(false);
+          this.autoEnd = performance.now() + 5000;
+          this.scheduleAdvance(5000);
+        };
+        ut.onerror = () => {
+          this.emitNarration(false);
+          const ms = this.fallbackMs();
+          this.autoEnd = performance.now() + ms;
+          this.scheduleAdvance(ms);
+        };
+        window.speechSynthesis.speak(ut);
+      } else {
+        const ms = this.fallbackMs();
+        this.autoEnd = performance.now() + ms;
+        this.scheduleAdvance(ms);
+      }
     });
   }
 
