@@ -5,3 +5,6 @@ dist
 
 # Compiled JavaScript output
 src/**/*.js
+
+# Tour temp script
+scripts/.tour.tmp.mjs
